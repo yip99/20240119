@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.css" type="text/css" />
+</head>
+
+<body>
+    <script>
+        let languages = {
+            "Afrikaans": "af",
+            "Albanian": "sq",
+            "Amharic": "am",
+            "Arabic": "ar",
+            "Armenian": "hy",
+            "Assamese": "as",
+            "Aymara": "ay",
+            "Azerbaijani": "az",
+            "Bambara": "bm",
+            "Basque": "eu",
+            "Belarusian": "be",
+            "Bengali": "bn",
+            "Bhojpuri": "bho",
+            "Bosnian": "bs",
+            "Bulgarian": "bg",
+            "Catalan": "ca",
+            "Cebuano": "ceb",
+            "Chinese (Simplified)": "zh-CN",
+            "Chinese (Traditional)": "zh-TW",
+            "Corsican": "co",
+            "Croatian": "hr",
+            "Czech": "cs",
+            "Danish": "da",
+            "Dhivehi": "dv",
+            "Dogri": "doi",
+            "Dutch": "nl",
+            "English": "en",
+            "Esperanto": "eo",
+            "Estonian": "et",
+            "Ewe": "ee",
+            "Filipino (Tagalog)": "fil",
+            "Finnish": "fi",
+            "French": "fr",
+            "Frisian": "fy",
+            "Galician": "gl",
+            "Georgian": "ka",
+            "German": "de",
+            "Greek": "el",
+            "Guarani": "gn",
+            "Gujarati": "gu",
+            "Haitian Creole": "ht",
+            "Hausa": "ha",
+            "Hawaiian": "haw",
+            "Hebrew": "he",
+            "Hindi": "hi",
+            "Hmong": "hmn",
+            "Hungarian": "hu",
+            "Icelandic": "is",
+            "Igbo": "ig",
+            "Ilocano": "ilo",
+            "Indonesian": "id",
+            "Irish": "ga",
+            "Italian": "it",
+            "Japanese": "ja",
+            "Javanese": "jv",
+            "Kannada": "kn",
+            "Kazakh": "kk",
+            "Khmer": "km",
+            "Kinyarwanda": "rw",
+            "Konkani": "gom",
+            "Korean": "ko",
+            "Krio": "kri",
+            "Kurdish": "ku",
+            "Kurdish (Sorani)": "ckb",
+            "Kyrgyz": "ky",
+            "Lao": "lo",
+            "Latin": "la",
+            "Latvian": "lv",
+            "Lingala": "ln",
+            "Lithuanian": "lt",
+            "Luganda": "lg",
+            "Luxembourgish": "lb",
+            "Macedonian": "mk",
+            "Maithili": "mai",
+            "Malagasy": "mg",
+            "Malay": "ms",
+            "Malayalam": "ml",
+            "Maltese": "mt",
+            "Maori": "mi",
+            "Marathi": "mr",
+            "Meiteilon (Manipuri)": "mni-Mtei",
+            "Mizo": "lus",
+            "Mongolian": "mn",
+            "Myanmar (Burmese)": "my",
+            "Nepali": "ne",
+            "Norwegian": "no",
+            "Nyanja (Chichewa)": "ny",
+            "Odia (Oriya)": "or",
+            "Oromo": "om",
+            "Pashto": "ps",
+            "Persian": "fa",
+            "Polish": "pl",
+            "Portuguese (Portugal, Brazil)": "pt",
+            "Punjabi": "pa",
+            "Quechua": "qu",
+            "Romanian": "ro",
+            "Russian": "ru",
+            "Samoan": "sm",
+            "Sanskrit": "sa",
+            "Scots Gaelic": "gd",
+            "Sepedi": "nso",
+            "Serbian": "sr",
+            "Sesotho": "st",
+            "Shona": "sn",
+            "Sindhi": "sd",
+            "Sinhala (Sinhalese)": "si",
+            "Slovak": "sk",
+            "Slovenian": "sl",
+            "Somali": "so",
+            "Spanish": "es",
+            "Sundanese": "su",
+            "Swahili": "sw",
+            "Swedish": "sv",
+            "Tagalog (Filipino)": "tl",
+            "Tajik": "tg",
+            "Tamil": "ta",
+            "Tatar": "tt",
+            "Telugu": "te",
+            "Thai": "th",
+            "Tigrinya": "ti",
+            "Tsonga": "ts",
+            "Turkish": "tr",
+            "Turkmen": "tk",
+            "Twi (Akan)": "ak",
+            "Ukrainian": "uk",
+            "Urdu": "ur",
+            "Uyghur": "ug",
+            "Uzbek": "uz",
+            "Vietnamese": "vi",
+            "Welsh": "cy",
+            "Xhosa": "xh",
+            "Yiddish": "yi",
+            "Yoruba": "yo",
+            "Zulu": "zu"
+        };
+    </script>
+    <div>
+        <span>From</span>
+        <input type="text" id="input-query" />
+    </div>
+    <div>
+        <span>To</span>
+        <div></div>
+    </div>
+
+    <script>
+        let timer;
+        document.querySelector('#input-query').addEventListener('input', async (event) => {
+            let query = document.querySelector('#input-query').value;
+            console.log(languages);
+            if (query === '') {
+                return;
+            }
+            clearTimeout(timer);
+            await new Promise((resolve, reject) => {
+                timer = setTimeout(async () => {
+                    console.log(await translate(query));
+                    resolve();
+                }, 1000);
+            });
+        });
+        async function translate(query) {
+            // let url = `https://clients5.google.com/translate_a/single?dj=1&dt=t&dt=sp&dt=ld&dt=bd&client=dict-chrome-ex&sl=auto&tl=en&q=${query}`;
+            let url = `https://translate.googleapis.com/translate_a/single?client=gtx&dt=t&sl=auto&tl=en&q=${query}`;
+            let response = await (await fetch(url)).json();
+            return response;
+        }
+    </script>
+</body>
+
+</html>
