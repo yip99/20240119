@@ -5,6 +5,61 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.css" type="text/css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sakura.css/css/sakura.css" type="text/css">
+    <style>
+        body {
+            display: flex;
+        }
+        .select-language {
+            /* position: relative; */
+            /* display: inline-block; */
+            user-select: none;
+            display: flex;
+            gap: 2rem;
+        }
+        .selected-language {
+            /* position: relative; */
+            /* display: flex; */
+            display: inline-block;
+        }
+        .dropdown {
+            border-color: hsl(240 5.9% 90%);
+            box-sizing: border-box;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 0 #0000, 0 0 #0000, 0 4px 6px -1px rgba(0, 0, 0, .1), 0 2px 4px -2px rgba(0, 0, 0, .1);
+            z-index: 1;
+            width: fit-content;
+            position: absolute;
+            background-color: #f9f9f9;
+            display: none;
+        }
+
+        .dropdown input {
+            margin: 0;
+            vertical-align: middle;
+        }
+
+        .dropdown>.search {
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .search input {
+            width: 100%;
+        }
+
+        label:has(input:checked) + div .dropdown {
+            display: block;
+        }
+
+        .options {
+            height: 20em;
+            overflow-y: auto;
+        }
+
+        .options>label {
+            padding: 0 0.5rem;
+        }
+    </style>
 </head>
 
 <body>
@@ -146,24 +201,35 @@
             "Zulu": "zu"
         };
     </script>
-    <div>
-        <span>From</span>
+    <div class="input">
+        <div class="select-language">
+            <label>From<input type="checkbox" hidden /></label>
+            <div class="selected-language">
+                <span>Auto</span>
+                <div class="dropdown">
+                    <div class="search"><input type="text" placeholder="search language"></div>
+                    <div class="options"></div>
+                </div>
+            </div>
+        </div>
         <input type="text" id="input-query" />
     </div>
-    <div>
-        <span>To</span>
-        <div></div>
+    <div class="output">
+        <div>
+            <span>To</span>
+            <div></div>
+        </div>
     </div>
 
     <script>
+        document.querySelector('div.options').innerHTML = '<label><input type="radio" name="language" value="auto" hidden />Auto</label>' + Object.entries(languages).map(([language, code]) => { return `<label><input type="radio" name="language" value="${code}" hidden />${language}</label>` }).join('');
         let timer;
         document.querySelector('#input-query').addEventListener('input', async (event) => {
+            clearTimeout(timer);
             let query = document.querySelector('#input-query').value;
-            console.log(languages);
             if (query === '') {
                 return;
             }
-            clearTimeout(timer);
             await new Promise((resolve, reject) => {
                 timer = setTimeout(async () => {
                     console.log(await translate(query));
