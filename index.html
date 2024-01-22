@@ -10,18 +10,15 @@
         body {
             display: flex;
         }
-        .select-language {
+
+        .language-select {
             /* position: relative; */
             /* display: inline-block; */
             user-select: none;
             display: flex;
             gap: 2rem;
         }
-        .selected-language {
-            /* position: relative; */
-            /* display: flex; */
-            display: inline-block;
-        }
+
         .dropdown {
             border-color: hsl(240 5.9% 90%);
             box-sizing: border-box;
@@ -47,16 +44,16 @@
             width: 100%;
         }
 
-        label:has(input:checked) + div .dropdown {
+        label:has(input:checked)~.dropdown {
             display: block;
         }
 
-        .options {
+        [class^="options-language-"] {
             height: 20em;
             overflow-y: auto;
         }
 
-        .options>label {
+        [class^="options-language-"]>label {
             padding: 0 0.5rem;
         }
     </style>
@@ -65,6 +62,7 @@
 <body>
     <script>
         let languages = {
+            "Auto": 'auto',
             "Afrikaans": "af",
             "Albanian": "sq",
             "Amharic": "am",
@@ -200,48 +198,203 @@
             "Yoruba": "yo",
             "Zulu": "zu"
         };
+        let fromLanguage;
+        let toLanguage = new Set();
+        let output = {};
+        let query;
+        let timer;
     </script>
     <div class="input">
-        <div class="select-language">
-            <label>From<input type="checkbox" hidden /></label>
-            <div class="selected-language">
-                <span>Auto</span>
+        <div class="language-select">
+            <span>From</span>
+            <div class="language-from">
+                <label class="language-from-selected"><span></span><input type="checkbox" hidden /></label>
                 <div class="dropdown">
-                    <div class="search"><input type="text" placeholder="search language"></div>
-                    <div class="options"></div>
+                    <div class="search"><input type="text" name="search-language-from" placeholder="search language"></div>
+                    <div class="options-language-from"></div>
                 </div>
             </div>
         </div>
         <input type="text" id="input-query" />
     </div>
-    <div class="output">
-        <div>
+    <div>
+        <div class="language-select">
             <span>To</span>
-            <div></div>
+            <div class="language-to">
+                <label class="language-to-selected"><span>(select language)</span><input type="checkbox" hidden /></label>
+                <div class="dropdown">
+                    <div class="search"><input type="text" name="search-language-to" placeholder="search language"></div>
+                    <div class="options-language-to"></div>
+                </div>
+            </div>
         </div>
+        <div class="output"></div>
     </div>
 
     <script>
-        document.querySelector('div.options').innerHTML = '<label><input type="radio" name="language" value="auto" hidden />Auto</label>' + Object.entries(languages).map(([language, code]) => { return `<label><input type="radio" name="language" value="${code}" hidden />${language}</label>` }).join('');
-        let timer;
+        generateOption();
+        init();
+
         document.querySelector('#input-query').addEventListener('input', async (event) => {
             clearTimeout(timer);
-            let query = document.querySelector('#input-query').value;
+            query = document.querySelector('#input-query').value;
+            setBrowserUrl();
             if (query === '') {
                 return;
             }
+            output = {};
             await new Promise((resolve, reject) => {
                 timer = setTimeout(async () => {
-                    console.log(await translate(query));
+                    for (let language of [...toLanguage]) {
+                        // let response = await translate({
+                        //     from: languages[fromLanguage],
+                        //     to: languages[language],
+                        //     query
+                        // })
+                        translate({
+                            from: languages[fromLanguage],
+                            to: language,
+                            query
+                        }).then(response => { output[language] = response[0][0][0]; updateOutput(); });
+                        // output[language] = response[0][0][0];
+                        // updateOutput();
+                        // await sleep(200);
+                    }
                     resolve();
                 }, 1000);
             });
         });
-        async function translate(query) {
+        function sleep(ms) {
+            return new Promise(function (resolve) {
+                setTimeout(resolve, ms);
+            });
+        }
+        function generateOption() {
+            let from = document.querySelector('div[class="options-language-from"]');
+            let to = document.querySelector('div[class="options-language-to"]');
+            let label;
+            let radio;
+            let span;
+            Object.entries(languages).forEach(([language, code]) => {
+                // document.querySelector('div[class="options-language-from"]').innerHTML += `<label><input type="radio" name="language-from" value="${language}" hidden /><span>${language}</span></label>`;
+                // document.querySelector('div[class="options-language-to"]').innerHTML += `<label><input type="checkbox" name="language-to" value="${language}" /><span>${language}</span></label>`;
+                label = document.createElement('label');
+                radio = document.createElement('input');
+                radio.type = 'radio';
+                radio.name = 'language-from';
+                radio.value = code;
+                radio.hidden = true;
+                radio.addEventListener('change', event => {
+                    fromLanguage = event.target.value;
+                    document.querySelector('label.language-from-selected > span').innerText = Object.keys(languages).find(language => languages[language] === event.target.value);
+                    setBrowserUrl();
+                });
+                span = document.createElement('span');
+                span.innerText = language;
+                label.appendChild(radio);
+                label.appendChild(span);
+                from.appendChild(label);
+
+                if (language !== 'Auto') {
+
+                    label = document.createElement('label');
+                    radio = document.createElement('input');
+                    radio.type = 'radio';
+                    radio.name = 'language-to';
+                    radio.value = code;
+                    radio.hidden = true;
+                    radio.addEventListener('change', event => {
+                        let language = event.target.value;
+                        if (event.target.checked) {
+                            toLanguage.add(language);
+                            document.querySelector('.output').innerHTML += `
+                        <div class="output-${language}">
+                            <button name="remove" value="${language}" >X</button>
+                            <span>${Object.keys(languages).find(language => languages[language] === event.target.value)}</span>
+                            <span class="output-translate"></span>
+                        </div>`;
+                        } else {
+                            toLanguage.delete(language);
+                            // document.querySelector('.output').innerHTML = '';
+                        }
+                        // document.querySelector('label.language-to-selected > span').innerText = [...toLanguage].map(language => language).join(', ');
+                        if (toLanguage.size === 0) {
+                            document.querySelector('label.language-to-selected > span').innerText = '(select language)';
+                        }
+                        setBrowserUrl();
+                    });
+                    span = document.createElement('span');
+                    span.innerText = language;
+                    label.appendChild(radio);
+                    label.appendChild(span);
+                    to.appendChild(label);
+                }
+            });
+        }
+        async function translate({ query, from, to }) {
             // let url = `https://clients5.google.com/translate_a/single?dj=1&dt=t&dt=sp&dt=ld&dt=bd&client=dict-chrome-ex&sl=auto&tl=en&q=${query}`;
-            let url = `https://translate.googleapis.com/translate_a/single?client=gtx&dt=t&sl=auto&tl=en&q=${query}`;
+            let url = `https://translate.googleapis.com/translate_a/single?client=gtx&dt=t&sl=${from ?? 'auto'}&tl=${to}&q=${query}`;
             let response = await (await fetch(url)).json();
             return response;
+        }
+        function updateOutput() {
+            for (let language in output) {
+                document.querySelector(`.output-${language} > .output-translate`).innerText = output[language];
+            }
+        }
+        function setBrowserUrl() {
+            const url = new URL(window.location.href);
+            // query && query.length ? url.searchParams.set('query', query) : url.searchParams.delete('query');
+            fromLanguage != 'auto' ? url.searchParams.set('from', fromLanguage) : url.searchParams.delete('from');
+            toLanguage.size ? url.searchParams.set('to', JSON.stringify([...toLanguage])) : url.searchParams.delete('to');
+            window.history.replaceState(null, null, url);
+        }
+        function init() {
+            // close dropdown if click outside listener
+            document.addEventListener('click', event => {
+                let dropdowns = document.querySelectorAll('div[class="language-from"], div[class="language-to"]');
+                for (let dropdown of dropdowns) {
+                    if (!dropdown.contains(event.target)) {
+                        dropdown.querySelector('input[type="checkbox"]').checked = false;
+                    }
+                }
+            });
+            // search language listener
+            document.querySelectorAll('input[name^="search-language-"]').forEach(input => {
+                input.addEventListener('input', (event) => {
+                    searchLanguage(event.target);
+                });
+            });
+            //
+            // document.querySelector('input[value="auto"]').addEventListener('change', event => {
+            //     fromLanguage = event.target.value;
+            //     document.querySelector('label.language-from-selected > span').innerText = 'Auto';
+            //     setBrowserUrl();
+            // });
+
+            const url = new URL(window.location.href);
+            // query = url.searchParams.get('query');
+            // document.querySelector('#input-query').value = query;
+
+            fromLanguage = Object.keys(languages).find(language => languages[language] === url.searchParams.get('from')) || 'Auto';
+            document.querySelector('label.language-from-selected > span').innerText = fromLanguage;
+
+            for (let code of JSON.parse(url.searchParams.get('to') || '[]')) {
+                let language = Object.keys(languages).find(language => languages[language] === code);
+                toLanguage.add(language);
+                document.querySelector(`input[name="language-to"][value="${code}"]`).checked = true;
+            }
+        }
+        function searchLanguage(search) {
+            let language = search.value;
+            document.querySelectorAll(`.dropdown:has([name="${search.name}"]) > div > label:has(input)`).forEach(label => {
+                if (Object.keys(languages).find(language => languages[language] === label.querySelector('input').value).toLowerCase().includes(language.toLowerCase())) {
+                    label.style.display = 'block';
+                } else {
+                    label.style.display = 'none';
+                }
+            });
+
         }
     </script>
 </body>
