@@ -198,10 +198,11 @@
             "Yoruba": "yo",
             "Zulu": "zu"
         };
-        let fromLanguage;
-        let toLanguage = new Set();
-        let output = {};
+        let codes = Object.fromEntries(Object.entries(languages).map(language => language.reverse()));
+        let from;
+        let to = new Set();
         let query;
+        let output = {};
         let timer;
     </script>
     <div class="input">
@@ -217,7 +218,7 @@
         </div>
         <input type="text" id="input-query" />
     </div>
-    <div>
+    <div class="output">
         <div class="language-select">
             <span>To</span>
             <div class="language-to">
@@ -228,7 +229,7 @@
                 </div>
             </div>
         </div>
-        <div class="output"></div>
+        <div class="output-translate-result"></div>
     </div>
 
     <script>
@@ -245,14 +246,14 @@
             output = {};
             await new Promise((resolve, reject) => {
                 timer = setTimeout(async () => {
-                    for (let language of [...toLanguage]) {
+                    for (let language of [...to]) {
                         // let response = await translate({
                         //     from: languages[fromLanguage],
                         //     to: languages[language],
                         //     query
                         // })
                         translate({
-                            from: languages[fromLanguage],
+                            from: languages[from],
                             to: language,
                             query
                         }).then(response => { output[language] = response[0][0][0]; updateOutput(); });
@@ -270,11 +271,13 @@
             });
         }
         function generateOption() {
-            let from = document.querySelector('div[class="options-language-from"]');
-            let to = document.querySelector('div[class="options-language-to"]');
+            let dropdownFrom = document.querySelector('div[class="options-language-from"]');
+            let dropdownTo = document.querySelector('div[class="options-language-to"]');
+            // console.log(dropdownFrom);
             let label;
             let radio;
             let span;
+            let checkbox;
             Object.entries(languages).forEach(([language, code]) => {
                 // document.querySelector('div[class="options-language-from"]').innerHTML += `<label><input type="radio" name="language-from" value="${language}" hidden /><span>${language}</span></label>`;
                 // document.querySelector('div[class="options-language-to"]').innerHTML += `<label><input type="checkbox" name="language-to" value="${language}" /><span>${language}</span></label>`;
@@ -285,50 +288,57 @@
                 radio.value = code;
                 radio.hidden = true;
                 radio.addEventListener('change', event => {
-                    fromLanguage = event.target.value;
-                    document.querySelector('label.language-from-selected > span').innerText = Object.keys(languages).find(language => languages[language] === event.target.value);
+                    console.log('change');
+                    from = event.target.value;
+                    document.querySelector('label.language-from-selected > span').innerText = codes[event.target.value];
                     setBrowserUrl();
                 });
                 span = document.createElement('span');
                 span.innerText = language;
-                label.appendChild(radio);
-                label.appendChild(span);
-                from.appendChild(label);
-
-                if (language !== 'Auto') {
-
-                    label = document.createElement('label');
-                    radio = document.createElement('input');
-                    radio.type = 'radio';
-                    radio.name = 'language-to';
-                    radio.value = code;
-                    radio.hidden = true;
-                    radio.addEventListener('change', event => {
-                        let language = event.target.value;
-                        if (event.target.checked) {
-                            toLanguage.add(language);
-                            document.querySelector('.output').innerHTML += `
-                        <div class="output-${language}">
-                            <button name="remove" value="${language}" >X</button>
-                            <span>${Object.keys(languages).find(language => languages[language] === event.target.value)}</span>
-                            <span class="output-translate"></span>
-                        </div>`;
-                        } else {
-                            toLanguage.delete(language);
-                            // document.querySelector('.output').innerHTML = '';
-                        }
-                        // document.querySelector('label.language-to-selected > span').innerText = [...toLanguage].map(language => language).join(', ');
-                        if (toLanguage.size === 0) {
-                            document.querySelector('label.language-to-selected > span').innerText = '(select language)';
-                        }
-                        setBrowserUrl();
-                    });
-                    span = document.createElement('span');
-                    span.innerText = language;
-                    label.appendChild(radio);
-                    label.appendChild(span);
-                    to.appendChild(label);
+                label.append(radio, span);
+                dropdownFrom.append(label);
+                if (language === 'Auto') {
+                    return;
                 }
+                label = document.createElement('label');
+                checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.name = 'language-to';
+                checkbox.value = code;
+                checkbox.hidden = true;
+                checkbox.addEventListener('change', event => {
+                    let language = event.target.value;
+                    if (event.target.checked) {
+                        console.log('add');
+                        to.add(language);
+                        let div = document.createElement('div');
+                        div.classList.add(`output-${language}`);
+                        let button = document.createElement('button');
+                        button.name = 'remove';
+                        button.value = language;
+                        button.innerText = 'X';
+                        let spanLanguage = document.createElement('span');
+                        spanLanguage.innerText = codes[language];
+                        let spanTranslate = document.createElement('span');
+                        spanTranslate.classList.add('output-translate');
+                        div.append(button, spanLanguage, spanTranslate);
+                        document.querySelector('.output-translate-result').append(div);
+                    } else {
+                        console.log('remove');
+                        to.delete(language);
+                        document.querySelector(`.output-${code}`).remove();
+                    }
+                    // document.querySelector('label.language-to-selected > span').innerText = [...toLanguage].map(language => language).join(', ');
+                    if (dropdownTo.size === 0) {
+                        document.querySelector('label.language-to-selected > span').innerText = '(select language)';
+                    }
+                    setBrowserUrl();
+                });
+                span = document.createElement('span');
+                span.innerText = language;
+                label.appendChild(checkbox);
+                label.appendChild(span);
+                dropdownTo.appendChild(label);
             });
         }
         async function translate({ query, from, to }) {
@@ -345,8 +355,8 @@
         function setBrowserUrl() {
             const url = new URL(window.location.href);
             // query && query.length ? url.searchParams.set('query', query) : url.searchParams.delete('query');
-            fromLanguage != 'auto' ? url.searchParams.set('from', fromLanguage) : url.searchParams.delete('from');
-            toLanguage.size ? url.searchParams.set('to', JSON.stringify([...toLanguage])) : url.searchParams.delete('to');
+            from != 'Auto' ? url.searchParams.set('from', from) : url.searchParams.delete('from');
+            to.size ? url.searchParams.set('to', JSON.stringify([...to])) : url.searchParams.delete('to');
             window.history.replaceState(null, null, url);
         }
         function init() {
@@ -376,12 +386,12 @@
             // query = url.searchParams.get('query');
             // document.querySelector('#input-query').value = query;
 
-            fromLanguage = Object.keys(languages).find(language => languages[language] === url.searchParams.get('from')) || 'Auto';
-            document.querySelector('label.language-from-selected > span').innerText = fromLanguage;
+            from = languages[url.searchParams.get('from')] || 'auto';
+            document.querySelector('label.language-from-selected > span').innerText = from;
 
             for (let code of JSON.parse(url.searchParams.get('to') || '[]')) {
                 let language = Object.keys(languages).find(language => languages[language] === code);
-                toLanguage.add(language);
+                to.add(language);
                 document.querySelector(`input[name="language-to"][value="${code}"]`).checked = true;
             }
         }
